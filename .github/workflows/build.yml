@@ -1,0 +1,48 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Create project
+        run: flutter create --platforms=android --project-name button_test .
+      - name: Write app code
+        run: |
+          cat > lib/main.dart <<'EOF'
+          import 'package:flutter/material.dart';
+          void main() => runApp(MaterialApp(debugShowCheckedModeBanner: false, home: P()));
+          class P extends StatefulWidget {
+            @override
+            State<P> createState() => S();
+          }
+          class S extends State<P> {
+            int n = 0;
+            @override
+            Widget build(BuildContext c) => Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(child: SizedBox(width: 220, height: 220, child: ElevatedButton(
+                onPressed: () => setState(() => n = n == 1 ? 2 : 1),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: n == 1 ? Colors.red : n == 2 ? Colors.blue : Colors.grey.shade800,
+                  foregroundColor: Colors.white,
+                  shape: CircleBorder()),
+                child: Text('بزن', style: TextStyle(fontSize: 26))))));
+          }
+          EOF
+      - name: Build APK
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
